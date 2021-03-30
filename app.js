@@ -4,26 +4,26 @@ const express = require('express');
 const morgan = require('morgan');
 const routes = require('./routes');
 
-// Create the Express app.
+// Crie um app Express.
 const app = express();
 
-// Setup request body JSON parsing.
+// Configuracao request body JSON parsing.
 app.use(express.json());
 
-// Setup morgan which gives us HTTP request logging.
+//Setup Morgan que nos dá o registro de requisições HTTP. 
 app.use(morgan('dev'));
 
-// Setup a friendly greeting for the root route.
+// Configure uma saudação amigável para a rota raiz. 
 app.get('/', (req, res) => {
   res.json({
-    message: 'Welcome to the REST API Validation with Express project!',
+    message: 'Bem-vindo ao  projeto validação de API REST com Express!',
   });
 });
 
-// Add routes.
+// Adicionar routes.
 app.use('/api', routes);
 
-// Send 404 if no other route matched.
+// enviar 404 se nenhuma outra rota é correspondente
 app.use((req, res) => {
   res.status(404).json({
     message: 'Route Not Found',
