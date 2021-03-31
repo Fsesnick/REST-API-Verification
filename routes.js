@@ -1,59 +1,44 @@
 'use strict';
 
 const express = require('express');
-const bcrypt = require('bcrypt');
-
-// This array is used to keep track of user records
-// as they are created.
-const users = [];
 
 // Construct a router instance.
 const router = express.Router();
+const User = require('./models').User;
+
+// Handler function to wrap each route.
+function asyncHandler(cb) {
+  return async (req, res, next) => {
+    try {
+      await cb(req, res, next);
+    } catch (error) {
+      // Forward error to the global error handler
+      next(error);
+    }
+  }
+}
 
 // Route that returns a list of users.
-router.get('/users', (req, res) => {
+router.get('/users', asyncHandler(async (req, res) => {
+  let users = await User.findAll();
   res.json(users);
-});
+}));
 
 // Route that creates a new user.
-router.post('/users', (req, res) => {
-  // Get the user from the request body.
-  const user = req.body;
-  
-  // Store errors
-  const errors = [];
+router.post('/users', asyncHandler(async (req, res) => {
+  try {
+    await User.create(req.body);
+    res.status(201).json({ "message": "Account successfully created!" });
+  } catch (error) {
+    console.log('ERROR: ', error.name);
 
-  // Validate that we have a `name` value.
-  if (!user.name) {
-    errors.push('Please provide a value for "name"');
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      const errors = error.errors.map(err => err.message);
+      res.status(400).json({ errors });   
+    } else {
+      throw error;
+    }
   }
-
-  // Validate that we have an `email` value.
-  if (!user.email) {
-    errors.push('Please provide a value for "email"');
-  } 
-
-  // Validate that we have a `password` value.
-  let password = user.password;
-  if (!password) {
-    errors.push('Please provide a value for "password"');
-  } else if (password.length < 8 || password.length > 20) {
-    errors.push('Your password should be between 8 and 20 characters');
-  } else {
-    user.password = bcrypt.hashSync(password, 10);
-  }
-
-  // If there are any errors...
-  if (errors.length > 0) {
-    // Return the validation errors to the client.
-    res.status(400).json({ errors });
-  } else {
-    // Add the user to the `users` array.
-    users.push(user);
-
-    // Set the status to 201 Created and end the response.
-    res.status(201).end();
-  }
-});
+}));
 
 module.exports = router;
